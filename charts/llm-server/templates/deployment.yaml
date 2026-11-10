@@ -1,0 +1,109 @@
+{{- $global := (.Values.global).llm | default dict -}}
+{{- $globalModel := ternary "" ($global.model | default "") (eq ($global.provider | default "") "anthropic") -}}
+{{- $model := .Values.model | default $globalModel | default "Qwen/Qwen2.5-7B-Instruct" -}}
+{{- $fullname := include "llm-server.fullname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}
+  labels:
+    {{- include "llm-server.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  {{- if .Values.persistence.enabled }}
+  strategy:
+    type: Recreate
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "llm-server.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "llm-server.selectorLabels" . | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- include "llm-server.imagePullSecrets" . | nindent 6 }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: vllm
+          image: {{ include "llm-server.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          command: ["vllm", "serve"]
+          args:
+            - {{ $model | quote }}
+            - --host=0.0.0.0
+            - --port=8000
+            - --served-model-name={{ .Values.servedModelName | default $model }}
+            - --max-model-len={{ .Values.maxModelLen }}
+            - --gpu-memory-utilization={{ .Values.gpuMemoryUtilization }}
+            - --tensor-parallel-size={{ .Values.gpu.count }}
+            {{- range .Values.extraArgs }}
+            - {{ . | quote }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: HF_HOME
+              value: /models
+            {{- if or .Values.huggingface.token .Values.huggingface.existingSecret }}
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.huggingface.existingSecret | default (printf "%s-hf" $fullname) }}
+                  key: {{ if .Values.huggingface.existingSecret }}{{ .Values.huggingface.existingSecretKey }}{{ else }}token{{ end }}
+            {{- end }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 15
+            # Allows up to 30 minutes for the first model download.
+            failureThreshold: 120
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 30
+            failureThreshold: 5
+          resources:
+            {{- $res := deepCopy .Values.resources }}
+            {{- $_ := set $res "limits" (merge (dict "nvidia.com/gpu" .Values.gpu.count) ($res.limits | default dict)) }}
+            {{- toYaml $res | nindent 12 }}
+          volumeMounts:
+            - name: models
+              mountPath: /models
+            - name: shm
+              mountPath: /dev/shm
+      volumes:
+        - name: models
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ $fullname }}-models
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: {{ .Values.shmSize }}
+      {{- include "llm-server.scheduling" . | nindent 6 }}

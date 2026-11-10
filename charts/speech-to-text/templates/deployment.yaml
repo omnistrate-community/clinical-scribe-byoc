@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "speech-to-text.fullname" . }}
+  labels:
+    {{- include "speech-to-text.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  {{- if .Values.persistence.enabled }}
+  strategy:
+    type: Recreate
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "speech-to-text.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "speech-to-text.selectorLabels" . | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- include "speech-to-text.imagePullSecrets" . | nindent 6 }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: whisper
+          image: {{ include "speech-to-text.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: WHISPER_MODEL
+              value: {{ .Values.whisper.model | quote }}
+            - name: WHISPER_DEVICE
+              value: {{ .Values.whisper.device | quote }}
+            - name: WHISPER_COMPUTE_TYPE
+              value: {{ .Values.whisper.computeType | quote }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+          resources:
+            {{- $res := deepCopy .Values.resources }}
+            {{- if .Values.gpu.enabled }}
+            {{- $_ := set $res "limits" (merge (dict "nvidia.com/gpu" .Values.gpu.count) ($res.limits | default dict)) }}
+            {{- end }}
+            {{- toYaml $res | nindent 12 }}
+          volumeMounts:
+            - name: models
+              mountPath: /models
+      volumes:
+        - name: models
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "speech-to-text.fullname" . }}-models
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+      {{- include "speech-to-text.scheduling" . | nindent 6 }}

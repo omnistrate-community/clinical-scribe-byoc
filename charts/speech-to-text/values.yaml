@@ -1,0 +1,59 @@
+# faster-whisper transcription service. Audio never leaves the cluster.
+
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+image:
+  registry: ""
+  repository: clinical-scribe/speech-to-text
+  tag: ""
+  pullPolicy: IfNotPresent
+
+whisper:
+  # Model name from faster-whisper, for example tiny.en, base.en, small.en, medium.en or large-v3.
+  model: base.en
+  # cpu or cuda. Set gpu.enabled=true when using cuda.
+  device: cpu
+  # int8 for CPU, float16 for GPU.
+  computeType: int8
+
+gpu:
+  enabled: false
+  count: 1
+
+# Model cache. With persistence disabled the model downloads on every pod start.
+persistence:
+  enabled: false
+  storageClass: ""
+  size: 5Gi
+
+replicaCount: 1
+fullnameOverride: ""
+commonLabels: {}
+imagePullSecrets: []
+extraEnv: []
+
+service:
+  type: ClusterIP
+  port: 8000
+
+resources:
+  requests:
+    cpu: "1"
+    memory: 2Gi
+  limits:
+    memory: 4Gi
+
+podAnnotations: {}
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  fsGroup: 10001
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+nodeSelector: {}
+tolerations: []
+affinity: {}

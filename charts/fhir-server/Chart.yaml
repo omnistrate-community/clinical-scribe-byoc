@@ -1,0 +1,6 @@
+apiVersion: v2
+name: fhir-server
+description: HAPI FHIR R4 server that stores the hospital's clinical data in an external Postgres database.
+type: application
+version: 0.1.0
+appVersion: "8.12.0"

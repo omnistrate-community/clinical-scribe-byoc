@@ -1,0 +1,31 @@
+apiVersion: v2
+name: clinical-scribe
+description: Clinical documentation agent for hospitals, deployed into the hospital's own cloud account.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+dependencies:
+  - name: fhir-server
+    version: 0.1.0
+    repository: file://../fhir-server
+    condition: fhir-server.enabled
+  - name: fhir-mcp
+    version: 0.1.0
+    repository: file://../fhir-mcp
+    condition: fhir-mcp.enabled
+  - name: speech-to-text
+    version: 0.1.0
+    repository: file://../speech-to-text
+    condition: speech-to-text.enabled
+  - name: llm-server
+    version: 0.1.0
+    repository: file://../llm-server
+    condition: llm-server.enabled
+  - name: scribe-agent
+    version: 0.1.0
+    repository: file://../scribe-agent
+    condition: scribe-agent.enabled
+  - name: synthea-loader
+    version: 0.1.0
+    repository: file://../synthea-loader
+    condition: synthea-loader.enabled

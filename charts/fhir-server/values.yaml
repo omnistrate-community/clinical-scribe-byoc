@@ -1,0 +1,65 @@
+# HAPI FHIR JPA server. Clinical data lives in the external Postgres database
+# described by `database` (or by `global.database` when installed through the
+# clinical-scribe umbrella chart).
+
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  database: {}
+
+# Database connection. Any field left empty falls back to global.database.
+database:
+  host: ""
+  # Empty means 5432.
+  port: ""
+  name: ""
+  username: ""
+  # Plain-text password. The chart stores it in a Secret. Leave empty when
+  # existingSecret is set.
+  password: ""
+  # Name of an existing Secret that holds the password, and optionally the username.
+  existingSecret: ""
+  # Key in existingSecret. Empty means "password".
+  existingSecretPasswordKey: ""
+  existingSecretUsernameKey: ""
+  # libpq/JDBC sslmode: disable, allow, prefer, require, verify-ca or verify-full.
+  sslMode: ""
+  # Extra JDBC URL parameters, for example "currentSchema=fhir&ApplicationName=hapi".
+  jdbcParams: ""
+
+image:
+  registry: docker.io
+  repository: hapiproject/hapi
+  tag: v8.12.0-2
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+fullnameOverride: ""
+commonLabels: {}
+imagePullSecrets: []
+
+fhirVersion: R4
+# Maximum number of connections in the HAPI connection pool.
+maxPoolSize: 20
+javaToolOptions: "-XX:MaxRAMPercentage=75"
+# Additional HAPI or Spring settings as environment variables, for example
+# HAPI_FHIR_ALLOW_EXTERNAL_REFERENCES=true.
+extraEnv: []
+
+service:
+  type: ClusterIP
+  port: 8080
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 2Gi
+  limits:
+    memory: 4Gi
+
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

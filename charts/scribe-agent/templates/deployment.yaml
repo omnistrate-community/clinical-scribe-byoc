@@ -1,0 +1,103 @@
+{{- $db := include "scribe-agent.database" . | fromYaml -}}
+{{- $fullname := include "scribe-agent.fullname" . -}}
+{{- $llm := include "scribe-agent.llm" . | fromYaml -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}
+  labels:
+    {{- include "scribe-agent.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "scribe-agent.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "scribe-agent.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/db: {{ include "scribe-agent.database" . | sha256sum }}
+        checksum/llm: {{ include "scribe-agent.llm" . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- include "scribe-agent.imagePullSecrets" . | nindent 6 }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: agent
+          image: {{ include "scribe-agent.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: DB_HOST
+              value: {{ $db.host | quote }}
+            - name: DB_PORT
+              value: {{ $db.port | quote }}
+            - name: DB_NAME
+              value: {{ $db.name | quote }}
+            - name: DB_SSLMODE
+              value: {{ $db.sslMode | quote }}
+            {{- include "scribe-agent.databaseCredentialEnv" (dict "ctx" . "chart" "scribe-agent" "userVar" "DB_USER" "passwordVar" "DB_PASSWORD") | nindent 12 }}
+            - name: LLM_PROVIDER
+              value: {{ $llm.provider | quote }}
+            - name: LLM_MODEL
+              value: {{ $llm.model | quote }}
+            - name: LLM_MAX_TOKENS
+              value: {{ .Values.llm.maxTokens | quote }}
+            {{- if eq $llm.provider "anthropic" }}
+            - name: CLAUDE_EFFORT
+              value: {{ .Values.llm.claude.effort | quote }}
+            - name: CLAUDE_FALLBACKS
+              value: {{ .Values.llm.claude.fallbacks | quote }}
+            {{- else }}
+            - name: LLM_BASE_URL
+              value: {{ $llm.baseUrl | default (printf "http://%s-llm-server:8000/v1" .Release.Name) | quote }}
+            - name: LLM_TEMPERATURE
+              value: {{ .Values.llm.temperature | quote }}
+            {{- end }}
+            {{- if or $llm.apiKey $llm.existingSecret }}
+            - name: {{ ternary "ANTHROPIC_API_KEY" "LLM_API_KEY" (eq $llm.provider "anthropic") }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $llm.existingSecret | default (printf "%s-llm" $fullname) }}
+                  key: {{ if $llm.existingSecret }}{{ $llm.existingSecretKey }}{{ else }}api-key{{ end }}
+            {{- end }}
+            - name: AGENT_MAX_STEPS
+              value: {{ .Values.agent.maxSteps | quote }}
+            - name: MCP_URL
+              value: {{ .Values.mcpUrl | default (printf "http://%s-fhir-mcp:8000/mcp" .Release.Name) | quote }}
+            - name: STT_URL
+              value: {{ .Values.sttUrl | default (printf "http://%s-speech-to-text:8000" .Release.Name) | quote }}
+            - name: HOSPITAL_NAME
+              value: {{ .Values.hospitalName | quote }}
+            - name: DEFAULT_CLINICIAN
+              value: {{ .Values.defaultClinician | quote }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      {{- include "scribe-agent.scheduling" . | nindent 6 }}

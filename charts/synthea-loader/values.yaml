@@ -1,0 +1,48 @@
+# Job that generates synthetic patients and loads them into the FHIR server.
+# Use it for demos and testing only. Never point it at a production FHIR store.
+
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+image:
+  registry: ""
+  repository: clinical-scribe/synthea-loader
+  tag: ""
+  pullPolicy: IfNotPresent
+
+# FHIR base URL. Empty means http://<release>-fhir-server:8080/fhir.
+fhirBaseUrl: ""
+patientCount: 25
+seed: 42
+ageRange: "35-85"
+state: Massachusetts
+# Skip generation when the FHIR server already contains patients.
+skipIfPatientsExist: true
+
+backoffLimit: 3
+# Seconds after completion before Kubernetes deletes the Job. Empty keeps it.
+ttlSecondsAfterFinished: ""
+
+fullnameOverride: ""
+commonLabels: {}
+imagePullSecrets: []
+extraEnv: []
+
+resources:
+  requests:
+    cpu: "1"
+    memory: 2Gi
+  limits:
+    memory: 4Gi
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+nodeSelector: {}
+tolerations: []
+affinity: {}

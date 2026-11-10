@@ -1,0 +1,99 @@
+# Clinical scribe agent API and clinician web UI. Drafts and the PHI access
+# audit log are stored in the external Postgres database.
+
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  database: {}
+  llm: {}
+
+# Database connection. Any field left empty falls back to global.database.
+database:
+  host: ""
+  # Empty means 5432.
+  port: ""
+  name: ""
+  username: ""
+  password: ""
+  existingSecret: ""
+  # Key in existingSecret. Empty means "password".
+  existingSecretPasswordKey: ""
+  existingSecretUsernameKey: ""
+  sslMode: ""
+
+image:
+  registry: ""
+  repository: clinical-scribe/scribe-agent
+  tag: ""
+  pullPolicy: IfNotPresent
+
+hospitalName: Example General Hospital
+defaultClinician: Dr. Demo Clinician
+
+# Model provider settings. Any field left empty falls back to global.llm.
+llm:
+  # anthropic (Claude API) or openai-compatible (vLLM or another compatible endpoint).
+  provider: ""
+  # Empty means claude-opus-5-5 for anthropic and Qwen/Qwen2.5-7B-Instruct for openai-compatible.
+  model: ""
+  # Plain-text API key. For anthropic this is the Claude API key and is required
+  # unless existingSecret is set. Use existingSecret in production.
+  apiKey: ""
+  existingSecret: ""
+  # Key in existingSecret. Empty means "api-key".
+  existingSecretKey: ""
+  # openai-compatible only. Empty means http://<release>-llm-server:8000/v1.
+  baseUrl: ""
+  # openai-compatible only. Current Claude models do not accept sampling parameters.
+  temperature: 0.2
+  maxTokens: 16000
+  # anthropic only.
+  claude:
+    # Thinking effort: low, medium, high, xhigh or max.
+    effort: medium
+    # Lets the API retry a declined request on a fallback model it selects.
+    fallbacks: true
+
+agent:
+  maxSteps: 8
+
+# Service URLs. Empty values point at the sibling charts in the same release.
+mcpUrl: ""
+sttUrl: ""
+
+replicaCount: 1
+fullnameOverride: ""
+commonLabels: {}
+imagePullSecrets: []
+extraEnv: []
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  host: scribe.example.internal
+  tls: []
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 1Gi
+
+podAnnotations: {}
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+nodeSelector: {}
+tolerations: []
+affinity: {}

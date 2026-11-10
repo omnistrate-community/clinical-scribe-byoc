@@ -1,0 +1,21 @@
+# Default demo profile: Claude as the model, everything else in the hospital account.
+# Supply the database and the Claude key from the control plane at install time.
+global:
+  imageRegistry: ghcr.io/your-org
+  database:
+    host: clinical-scribe.abc123.us-east-1.rds.amazonaws.com
+    name: clinical_scribe
+    existingSecret: clinical-scribe-db      # keys: username, password
+    existingSecretUsernameKey: username
+    sslMode: require
+  llm:
+    provider: anthropic
+    model: claude-opus-5-5
+    existingSecret: claude-api-key          # key: api-key
+
+fhir-server:
+  database:
+    name: fhir
+
+scribe-agent:
+  hospitalName: St. Example General

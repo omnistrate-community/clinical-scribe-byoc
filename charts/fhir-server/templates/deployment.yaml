@@ -1,0 +1,79 @@
+{{- $db := include "fhir-server.database" . | fromYaml -}}
+{{- $params := printf "sslmode=%s" $db.sslMode -}}
+{{- if $db.jdbcParams }}{{- $params = printf "%s&%s" $params $db.jdbcParams -}}{{- end -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fhir-server.fullname" . }}
+  labels:
+    {{- include "fhir-server.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "fhir-server.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "fhir-server.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/db: {{ include "fhir-server.database" . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- include "fhir-server.imagePullSecrets" . | nindent 6 }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: hapi
+          image: {{ include "fhir-server.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: {{ printf "jdbc:postgresql://%s:%d/%s?%s" $db.host (int $db.port) $db.name $params | quote }}
+            {{- include "fhir-server.databaseCredentialEnv" (dict "ctx" . "chart" "fhir-server" "userVar" "SPRING_DATASOURCE_USERNAME" "passwordVar" "SPRING_DATASOURCE_PASSWORD") | nindent 12 }}
+            - name: SPRING_DATASOURCE_DRIVERCLASSNAME
+              value: org.postgresql.Driver
+            - name: SPRING_DATASOURCE_HIKARI_MAXIMUMPOOLSIZE
+              value: {{ .Values.maxPoolSize | quote }}
+            - name: SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT
+              value: ca.uhn.fhir.jpa.model.dialect.HapiFhirPostgresDialect
+            - name: HAPI_FHIR_FHIR_VERSION
+              value: {{ .Values.fhirVersion | quote }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.javaToolOptions | quote }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          startupProbe:
+            httpGet:
+              path: /fhir/metadata
+              port: http
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /fhir/metadata
+              port: http
+            periodSeconds: 15
+            timeoutSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /fhir/metadata
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- include "fhir-server.scheduling" . | nindent 6 }}

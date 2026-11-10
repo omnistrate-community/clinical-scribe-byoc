@@ -1,0 +1,6 @@
+apiVersion: v2
+name: synthea-loader
+description: Job that generates synthetic patients with Synthea and loads them into FHIR.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

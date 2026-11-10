@@ -1,0 +1,30 @@
+# Local test on kind with examples/dev-postgres.yaml and a model served by
+# Ollama on the host machine.
+global:
+  database:
+    host: dev-postgres
+    name: clinical_scribe
+    existingSecret: dev-postgres
+    existingSecretUsernameKey: username
+    sslMode: disable
+  llm:
+    provider: openai-compatible
+    model: qwen2.5:3b
+
+fhir-mcp:
+  image: {pullPolicy: Never, tag: 0.1.0}
+speech-to-text:
+  image: {pullPolicy: Never, tag: 0.1.0}
+  whisper: {model: tiny.en}
+  resources: {requests: {cpu: 200m, memory: 512Mi}}
+synthea-loader:
+  image: {pullPolicy: Never, tag: 0.1.0}
+  patientCount: 8
+  resources: {requests: {cpu: 200m, memory: 1Gi}}
+fhir-server:
+  resources: {requests: {cpu: 200m, memory: 1Gi}, limits: {memory: 3Gi}}
+scribe-agent:
+  image: {pullPolicy: Never, tag: 0.1.0}
+  llm:
+    baseUrl: http://host.docker.internal:11434/v1
+    maxTokens: 2048

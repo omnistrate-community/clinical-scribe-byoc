@@ -1,0 +1,55 @@
+{{- /*
+The Job name includes the release revision because Job specs are immutable.
+Each upgrade creates a new Job, and skipIfPatientsExist makes reruns cheap.
+*/ -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ printf "%s-%d" (include "synthea-loader.fullname" .) .Release.Revision | trunc 63 | trimSuffix "-" }}
+  labels:
+    {{- include "synthea-loader.labels" . | nindent 4 }}
+spec:
+  backoffLimit: {{ .Values.backoffLimit }}
+  {{- if .Values.ttlSecondsAfterFinished }}
+  ttlSecondsAfterFinished: {{ .Values.ttlSecondsAfterFinished }}
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- include "synthea-loader.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      {{- include "synthea-loader.imagePullSecrets" . | nindent 6 }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: loader
+          image: {{ include "synthea-loader.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          env:
+            - name: FHIR_BASE_URL
+              value: {{ .Values.fhirBaseUrl | default (printf "http://%s-fhir-server:8080/fhir" .Release.Name) | quote }}
+            - name: PATIENT_COUNT
+              value: {{ .Values.patientCount | quote }}
+            - name: SEED
+              value: {{ .Values.seed | quote }}
+            - name: AGE_RANGE
+              value: {{ .Values.ageRange | quote }}
+            - name: STATE
+              value: {{ .Values.state | quote }}
+            - name: SKIP_IF_PATIENTS_EXIST
+              value: {{ .Values.skipIfPatientsExist | quote }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: work
+              mountPath: /work
+      volumes:
+        - name: work
+          emptyDir: {}
+      {{- include "synthea-loader.scheduling" . | nindent 6 }}

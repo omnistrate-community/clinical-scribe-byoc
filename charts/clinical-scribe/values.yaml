@@ -1,0 +1,70 @@
+# Umbrella chart for the clinical scribe data plane. Each component is its own
+# chart under charts/ and can also be installed on its own.
+
+global:
+  # Registry for the first-party images (fhir-mcp, speech-to-text,
+  # scribe-agent, synthea-loader). Third-party images keep their own registry.
+  imageRegistry: ""
+  imagePullSecrets: []
+
+  # Postgres connection shared by fhir-server and scribe-agent. This is the
+  # input a control plane supplies at install time, for example the endpoint
+  # of an RDS, Cloud SQL or Azure Database instance in the hospital account.
+  # Each component can override any field under <component>.database, which
+  # is how you give the FHIR store and the agent separate databases.
+  database:
+    host: ""
+    port: 5432
+    name: clinical_scribe
+    username: ""
+    # Plain-text password, stored by each chart in its own Secret. Leave empty
+    # when existingSecret is set.
+    password: ""
+    # Existing Secret with the password and, optionally, the username.
+    existingSecret: ""
+    existingSecretPasswordKey: password
+    existingSecretUsernameKey: ""
+    # disable, allow, prefer, require, verify-ca or verify-full.
+    sslMode: require
+
+  # Model provider for the scribe agent.
+  llm:
+    # anthropic: Claude through the Anthropic API, using the API key below.
+    # openai-compatible: the optional llm-server (vLLM) chart in this release,
+    # or any OpenAI-compatible endpoint set in scribe-agent.llm.baseUrl.
+    provider: anthropic
+    # Empty means claude-opus-5-5 for anthropic and Qwen/Qwen2.5-7B-Instruct
+    # for openai-compatible.
+    model: ""
+    # Claude API key, or the key for an OpenAI-compatible endpoint that needs one.
+    # The scribe-agent chart stores it in a Secret.
+    apiKey: ""
+    # Existing Secret that holds the key, used instead of apiKey.
+    existingSecret: ""
+    existingSecretKey: api-key
+
+fhir-server:
+  enabled: true
+  database: {}
+    # name: fhir
+
+fhir-mcp:
+  enabled: true
+
+speech-to-text:
+  enabled: true
+
+llm-server:
+  # Optional self-hosted model. Enable it together with
+  # global.llm.provider=openai-compatible to keep inference in the hospital
+  # account. It needs a GPU node pool.
+  enabled: false
+
+scribe-agent:
+  enabled: true
+  database: {}
+    # name: scribe
+
+synthea-loader:
+  # Loads synthetic patients for demos. Disable for real deployments.
+  enabled: true

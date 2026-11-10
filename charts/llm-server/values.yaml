@@ -1,0 +1,70 @@
+# Optional vLLM OpenAI-compatible server. Use it when prompts, chart data and
+# completions must stay in the hospital's cluster. Requires a GPU node pool.
+
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  llm: {}
+
+image:
+  registry: docker.io
+  repository: vllm/vllm-openai
+  tag: v0.33.0
+  pullPolicy: IfNotPresent
+
+# Hugging Face model id. Empty falls back to global.llm.model when
+# global.llm.provider is openai-compatible, then to Qwen/Qwen2.5-7B-Instruct.
+model: ""
+# Name that clients send in the "model" field. Empty means the model id.
+servedModelName: ""
+maxModelLen: 16384
+gpuMemoryUtilization: 0.90
+# Arguments appended to `vllm serve`. The defaults enable tool calling for Qwen2.5 models.
+extraArgs:
+  - --enable-auto-tool-choice
+  - --tool-call-parser
+  - hermes
+
+# Hugging Face token for gated models. Use existingSecret in production.
+huggingface:
+  token: ""
+  existingSecret: ""
+  existingSecretKey: token
+
+gpu:
+  count: 1
+
+persistence:
+  enabled: true
+  storageClass: ""
+  size: 50Gi
+
+# Size of the shared memory volume used by tensor parallel workers.
+shmSize: 8Gi
+
+replicaCount: 1
+fullnameOverride: ""
+commonLabels: {}
+imagePullSecrets: []
+extraEnv: []
+
+service:
+  type: ClusterIP
+  port: 8000
+
+resources:
+  requests:
+    cpu: "4"
+    memory: 24Gi
+  limits:
+    memory: 48Gi
+
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+nodeSelector: {}
+tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+    effect: NoSchedule
+affinity: {}

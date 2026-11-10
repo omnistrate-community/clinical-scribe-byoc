@@ -1,0 +1,6 @@
+apiVersion: v2
+name: speech-to-text
+description: faster-whisper transcription service with an OpenAI-compatible API.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

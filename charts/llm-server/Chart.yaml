@@ -1,0 +1,6 @@
+apiVersion: v2
+name: llm-server
+description: vLLM server that hosts the language model inside the hospital account.
+type: application
+version: 0.1.0
+appVersion: "0.33.0"

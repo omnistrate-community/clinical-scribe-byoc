@@ -1,0 +1,21 @@
+dependencies:
+- name: fhir-server
+  repository: file://../fhir-server
+  version: 0.1.0
+- name: fhir-mcp
+  repository: file://../fhir-mcp
+  version: 0.1.0
+- name: speech-to-text
+  repository: file://../speech-to-text
+  version: 0.1.0
+- name: llm-server
+  repository: file://../llm-server
+  version: 0.1.0
+- name: scribe-agent
+  repository: file://../scribe-agent
+  version: 0.1.0
+- name: synthea-loader
+  repository: file://../synthea-loader
+  version: 0.1.0
+digest: sha256:9d6641a66874d4ac4474a8e9cb4812d364583faf7d4e4039d68a1a97f96de8b9
+generated: "2026-11-09T19:42:24.974204-07:00"

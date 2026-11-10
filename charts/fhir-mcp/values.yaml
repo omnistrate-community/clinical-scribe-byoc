@@ -1,0 +1,45 @@
+# MCP server that gives the scribe agent tool access to the FHIR server.
+
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+image:
+  # Empty registry falls back to global.imageRegistry.
+  registry: ""
+  repository: clinical-scribe/fhir-mcp
+  tag: ""
+  pullPolicy: IfNotPresent
+
+# FHIR base URL. Empty means http://<release>-fhir-server:8080/fhir.
+fhirBaseUrl: ""
+
+replicaCount: 1
+fullnameOverride: ""
+commonLabels: {}
+imagePullSecrets: []
+extraEnv: []
+
+service:
+  type: ClusterIP
+  port: 8000
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    memory: 512Mi
+
+podAnnotations: {}
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+nodeSelector: {}
+tolerations: []
+affinity: {}

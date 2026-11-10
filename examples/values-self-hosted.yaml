@@ -1,0 +1,32 @@
+# Fully private profile: the model runs on vLLM in the hospital account, so no
+# prompt or chart data leaves the cluster. Requires a GPU node pool.
+global:
+  imageRegistry: ghcr.io/your-org
+  database:
+    host: clinical-scribe.abc123.eu-north-1.rds.amazonaws.com
+    name: clinical_scribe
+    existingSecret: clinical-scribe-db
+    existingSecretUsernameKey: username
+    sslMode: require
+  llm:
+    provider: openai-compatible
+    model: Qwen/Qwen2.5-7B-Instruct
+
+llm-server:
+  enabled: true
+  nodeSelector:
+    node.kubernetes.io/instance-type: g6.2xlarge
+
+speech-to-text:
+  whisper:
+    device: cuda
+    computeType: float16
+  gpu:
+    enabled: true
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Exists
+      effect: NoSchedule
+
+scribe-agent:
+  hospitalName: Nordic Example Clinic

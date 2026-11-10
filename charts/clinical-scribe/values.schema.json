@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "global": {
+      "type": "object",
+      "properties": {
+        "imageRegistry": {
+          "type": "string"
+        },
+        "imagePullSecrets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "database": {
+          "type": "object",
+          "description": "Postgres connection shared by fhir-server and scribe-agent.",
+          "properties": {
+            "host": {
+              "type": "string",
+              "description": "Hostname or IP address of the Postgres server."
+            },
+            "port": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            },
+            "name": {
+              "type": "string",
+              "description": "Database name."
+            },
+            "username": {
+              "type": "string"
+            },
+            "password": {
+              "type": "string"
+            },
+            "existingSecret": {
+              "type": "string",
+              "description": "Secret that holds the password and optionally the username."
+            },
+            "existingSecretPasswordKey": {
+              "type": "string"
+            },
+            "existingSecretUsernameKey": {
+              "type": "string"
+            },
+            "sslMode": {
+              "type": "string",
+              "enum": [
+                "disable",
+                "allow",
+                "prefer",
+                "require",
+                "verify-ca",
+                "verify-full"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "llm": {
+          "type": "object",
+          "description": "Model provider for the scribe agent.",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "enum": [
+                "anthropic",
+                "openai-compatible"
+              ]
+            },
+            "model": {
+              "type": "string"
+            },
+            "apiKey": {
+              "type": "string",
+              "description": "Claude API key, or the key for an OpenAI-compatible endpoint."
+            },
+            "existingSecret": {
+              "type": "string"
+            },
+            "existingSecretKey": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  }
+}

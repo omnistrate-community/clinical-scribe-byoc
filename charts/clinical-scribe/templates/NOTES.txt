@@ -1,0 +1,27 @@
+Clinical scribe is installed as release {{ .Release.Name }} in namespace {{ .Release.Namespace }}.
+
+Components:
+{{- range $name := list "fhir-server" "fhir-mcp" "speech-to-text" "llm-server" "scribe-agent" "synthea-loader" }}
+{{- $v := index $.Values $name }}
+  {{ printf "%-15s" $name }} {{ if $v.enabled }}enabled{{ else }}disabled{{ end }}
+{{- end }}
+
+
+Model provider: {{ .Values.global.llm.provider }}{{ if eq .Values.global.llm.provider "anthropic" }} (inference runs on the Claude API){{ else }} (OpenAI-compatible endpoint){{ end }}
+
+{{- $sa := index .Values "scribe-agent" }}
+{{- if $sa.enabled }}
+
+Open the clinician UI:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ .Release.Name }}-scribe-agent 8080:8080
+  open http://localhost:8080
+{{- end }}
+
+{{- if (index .Values "synthea-loader").enabled }}
+
+Follow the synthetic patient load:
+  kubectl -n {{ .Release.Namespace }} logs -f job/{{ .Release.Name }}-synthea-loader-{{ .Release.Revision }}
+{{- end }}
+
+The FHIR server can take two to three minutes to start on first install while
+it creates its schema in {{ .Values.global.database.host }}.
