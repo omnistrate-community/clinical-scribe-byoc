@@ -1,6 +1,8 @@
 # Local test on kind with examples/dev-postgres.yaml and a model served by
 # Ollama on the host machine.
 global:
+  # Use the images built locally and loaded with `kind load`.
+  imageRegistry: ""
   database:
     host: dev-postgres
     name: clinical_scribe

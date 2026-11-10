@@ -1,7 +1,6 @@
 # Fully private profile: the model runs on vLLM in the hospital account, so no
 # prompt or chart data leaves the cluster. Requires a GPU node pool.
 global:
-  imageRegistry: ghcr.io/your-org
   database:
     host: clinical-scribe.abc123.eu-north-1.rds.amazonaws.com
     name: clinical_scribe

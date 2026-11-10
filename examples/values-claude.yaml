@@ -1,7 +1,6 @@
 # Default demo profile: Claude as the model, everything else in the hospital account.
 # Supply the database and the Claude key from the control plane at install time.
 global:
-  imageRegistry: ghcr.io/your-org
   database:
     host: clinical-scribe.abc123.us-east-1.rds.amazonaws.com
     name: clinical_scribe

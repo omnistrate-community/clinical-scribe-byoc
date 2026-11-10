@@ -1,7 +1,7 @@
 # MCP server that gives the scribe agent tool access to the FHIR server.
 
 global:
-  imageRegistry: ""
+  imageRegistry: ghcr.io/omnistrate-community
   imagePullSecrets: []
 
 image:

@@ -4,7 +4,7 @@
 global:
   # Registry for the first-party images (fhir-mcp, speech-to-text,
   # scribe-agent, synthea-loader). Third-party images keep their own registry.
-  imageRegistry: ""
+  imageRegistry: ghcr.io/omnistrate-community
   imagePullSecrets: []
 
   # Postgres connection shared by fhir-server and scribe-agent. This is the

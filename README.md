@@ -83,10 +83,11 @@ The umbrella chart has a `values.schema.json` that validates the database and mo
 
 ## Install
 
-Build and push the four first-party images, then package the chart.
+The four first-party images are published for `linux/amd64` and `linux/arm64` under `ghcr.io/omnistrate-community/clinical-scribe/`, and the charts use that registry by default. Set `global.imageRegistry` to use a mirror in the hospital account. To build and push the images to another registry, run `make push REGISTRY=<registry>`.
+
+Package the chart:
 
 ```bash
-make push REGISTRY=ghcr.io/your-org
 make charts
 ```
 

@@ -2,7 +2,7 @@
 # audit log are stored in the external Postgres database.
 
 global:
-  imageRegistry: ""
+  imageRegistry: ghcr.io/omnistrate-community
   imagePullSecrets: []
   database: {}
   llm: {}

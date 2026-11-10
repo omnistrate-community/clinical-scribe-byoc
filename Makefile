@@ -1,4 +1,4 @@
-REGISTRY ?= ghcr.io/your-org
+REGISTRY ?= ghcr.io/omnistrate-community
 TAG ?= 0.1.0
 SERVICES := fhir-mcp scribe-agent speech-to-text synthea-loader
 PLATFORMS ?= linux/amd64,linux/arm64
@@ -10,7 +10,7 @@ images:
 
 push:
 	for s in $(SERVICES); do \
-	  docker buildx build --platform $(PLATFORMS) -t $(REGISTRY)/clinical-scribe/$$s:$(TAG) --push services/$$s; \
+	  docker buildx build --platform $(PLATFORMS) --label org.opencontainers.image.source=https://github.com/omnistrate-community/clinical-scribe-byoc -t $(REGISTRY)/clinical-scribe/$$s:$(TAG) --push services/$$s; \
 	done
 
 charts:

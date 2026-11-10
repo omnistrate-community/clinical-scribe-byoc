@@ -1,7 +1,7 @@
 # faster-whisper transcription service. Audio never leaves the cluster.
 
 global:
-  imageRegistry: ""
+  imageRegistry: ghcr.io/omnistrate-community
   imagePullSecrets: []
 
 image:
